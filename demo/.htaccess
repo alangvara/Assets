@@ -1,0 +1,4 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine on
+    RewriteRule ^assets/(javascripts|stylesheets)/([a-zA-Z0-9\-\.]+)$ assets.php?type=$1&script=$2 [L]
+</IfModule>

@@ -1,0 +1,20 @@
+{
+    "name": "alangvara/assets",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Alan Guevara",
+            "email": "alangvara@gmail.com"
+        }
+    ],
+		"autoload": {
+	    "classmap": [
+	    	"src/"
+	    ]
+	  },
+    "minimum-stability": "dev",
+    "require": {
+			"php": ">=5.3.0",
+			"mrclay/minify": "2.2.*"
+    }
+}
