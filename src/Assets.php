@@ -120,7 +120,12 @@ class Assets{
       header("HTTP/1.1 304 Not Modified");
       exit;
     }else{
-      ob_start("ob_gzhandler");
+      if(!in_array('ob_gzhandler', ob_list_handlers())){
+        ob_start('ob_gzhandler');
+      }else {
+        ob_start();
+      }
+
       header("Content-type: text/javascript; charset: UTF-8");
       echo $this->getSource('javascripts', $scripts);
     }
@@ -145,7 +150,12 @@ class Assets{
       header("HTTP/1.1 304 Not Modified");
       exit;
     }else{
-      ob_start("ob_gzhandler");
+      if(!in_array('ob_gzhandler', ob_list_handlers())){
+        ob_start('ob_gzhandler');
+      }else {
+        ob_start();
+      }
+      
       header("Content-type: text/css; charset: UTF-8");
       echo $this->getSource('stylesheets', $scripts);
     }
