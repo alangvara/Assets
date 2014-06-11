@@ -27,9 +27,9 @@ class Assets{
   
   protected $stylesheets = array();
   
+  protected $maxCacheDate = '0000-00-00 00:00:00'; //oldest cache version allowed 
+  
   public function __construct($configs){
-    $this->javascripts = $configs['javascripts'];
-    $this->stylesheets = $configs['stylesheets'];
     
     if(isset($configs['concat'])){
       $this->concat = $configs['concat'];
@@ -48,25 +48,31 @@ class Assets{
     }
     
     if(isset($configs['javascripts_uri'])){
-      $this->javascriptsUri =  $configs['javascripts_uri'];
+      $this->javascriptsUri = $configs['javascripts_uri'];
     }
     
     if(isset($configs['stylesheets_uri'])){
-      $this->stylesheetsUri =  $configs['stylesheets_uri'];
+      $this->stylesheetsUri = $configs['stylesheets_uri'];
     }
     
     if(isset($configs['stylesheets_path'])){
-      $this->stylesheetsPath =  $configs['stylesheets_path'];
+      $this->stylesheetsPath = $configs['stylesheets_path'];
     }else{
       $this->stylesheetsPath = dirname(__FILE__) . '/assets/stylesheets';
     }
     
     if(isset($configs['javascripts_path'])){
-      $this->javascriptsPath =  $configs['javascripts_path'];
+      $this->javascriptsPath = $configs['javascripts_path'];
     }else{
       $this->javascriptsPath = dirname(__FILE__) . '/assets/javascripts';
     }
     
+    if(isset($configs['max_cache_date'])){
+      $this->maxCacheDate = $configs['max_cache_date'];
+    }
+    
+    $this->javascripts = $this->parseJavascripts($configs['javascripts']);
+    $this->stylesheets = $this->parseStylesheets($configs['stylesheets']);
   }
   
   
@@ -110,22 +116,26 @@ class Assets{
       $scripts = $file;
     }
     
+    $now           = time();
     $modifiedSince = $this->httpModifiedSince();
     $lastModified  = $this->lastModified($this->javascriptsPath, $scripts);
+    $maxCacheDate  = strtotime($this->maxCacheDate);
+    
+    if($maxCacheDate > $lastModified){
+      
+      if($maxCacheDate > $now){
+        $lastModified = $now;
+      }else{
+        $lastModified = $maxCacheDate;
+      }
+    }
     
     header("Last-Modified: " . gmdate("D, d M Y H:i:s", $lastModified) ." GMT");
     header('Cache-Control: public');
     
-    if($this->cached && $modifiedSince >= $lastModified){
+    if($this->cached && $modifiedSince >= $lastModified){  
       header("HTTP/1.1 304 Not Modified");
-      exit;
     }else{
-      if(!in_array('ob_gzhandler', ob_list_handlers())){
-        ob_start('ob_gzhandler');
-      }else {
-        ob_start();
-      }
-
       header("Content-type: text/javascript; charset: UTF-8");
       echo $this->getSource('javascripts', $scripts);
     }
@@ -150,17 +160,56 @@ class Assets{
       header("HTTP/1.1 304 Not Modified");
       exit;
     }else{
-      if(!in_array('ob_gzhandler', ob_list_handlers())){
-        ob_start('ob_gzhandler');
-      }else {
-        ob_start();
-      }
-      
       header("Content-type: text/css; charset: UTF-8");
       echo $this->getSource('stylesheets', $scripts);
     }
   }
   
+  protected function parseJavascripts($files){
+    
+    $resultFiles = array();
+    
+    foreach($files as $fl){
+      //valida que sea un comodin de y requiere obtener todos los archivos del directorio.
+      if(stripos($fl, '*') == (strlen($fl) - 1)){
+        $path = substr($fl, 0, strlen($fl) - 1);
+
+        foreach(scandir($this->javascriptsPath . '/' . $path) as $f){
+          if(!is_dir($this->javascriptsPath . '/' . $path . $f)){
+            $resultFiles[] = $path . $f;
+          }
+        }
+        
+      }else{
+        $resultFiles[] = $fl;
+      }
+    }
+    
+    return $resultFiles;
+  }
+  
+  protected function parseStylesheets($files){
+    
+    $resultFiles = array();
+    
+    foreach($files as $fl){
+      //valida que sea un comodin de y requiere obtener todos los archivos del directorio.
+      if(stripos($fl, '*') == (strlen($fl) - 1)){
+        $path = substr($fl, 0, strlen($fl) - 1);
+
+        foreach(scandir($this->stylesheetsPath . '/' . $path) as $f){
+          if(!is_dir($this->stylesheetsPath . '/' . $path . $f)){
+            $resultFiles[] = $path . $f;
+          }
+        }
+        
+      }else{
+        $resultFiles[] = $fl;
+      }
+    }
+    
+    return $resultFiles;
+  }
   
   protected function lastModified($path, $files){
     $lastModified = 0;
@@ -172,6 +221,9 @@ class Assets{
           $lastModified = $modified;
         }
       }
+      
+      //also validates configs file modification date when loading all.js
+      
     }else{
       $lastModified = filemtime($path . $files);
     }

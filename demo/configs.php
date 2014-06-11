@@ -6,7 +6,7 @@ return array(
   
   'minify' => TRUE,
   
-  'cached' => FALSE,
+  'cached' => TRUE,
   
   'debug'  => TRUE,
   
@@ -26,6 +26,9 @@ return array(
   'stylesheets' => array(
     'style.css',
     'colors.css'
-  )
+  ),
+  
+  //oldest cache version allowed on GTM time
+  'max_cache_date' => '2014-06-11 00:00:00 GMT'   
 
 );
